@@ -639,11 +639,23 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                     long checkPointTimeStamp = checkPointTimeStamps.get(mapHeadings.indexOf(headingOnStep)+1);
                     double tempLat;
                     double tempLon;
-                    if(lowerTimeBound < checkPointTimeStamp  && upperTimeBound > checkPointTimeStamp && checkPointTimeStamps.indexOf(checkPointTimeStamp) != checkPointTimeStamps.size()){
-                        //TODO currently removes points here as when a turn occurs, there is uncertainty for wifi signals as phone's orientation changes
-                        //TODO after the turn occurs, it sets the user's position to the turn point, therefore there is less position uncertainty
-                        tempLat = -1;
-                        tempLon = -1;
+                    //If a step had a turn within it
+                    if(lowerTimeBound < checkPointTimeStamp  && upperTimeBound > checkPointTimeStamp){
+                        //If the current macID time is less than when the checkpoint occurred, calculate based on the checkpoint time as the upper time bound
+                        if(macIDTime < checkPointTimeStamp){
+                            tempLat = prevStep.getLatitude() + findDistance(prevStep, mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)))[0]* ((double) (macIDTime - lowerTimeBound)) / ((double) (checkPointTimeStamp - lowerTimeBound))*Math.sin(headingOnStep)*findDistance(prevStep, mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)))[1];
+                            tempLon = prevStep.getLatitude() + findDistance(prevStep, mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)))[0]* ((double) (macIDTime - lowerTimeBound)) / ((double) (checkPointTimeStamp - lowerTimeBound))*Math.cos(headingOnStep)*findDistance(prevStep, mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)))[1];
+                        }
+                        else if(j<stepCoordsPDR.size()){
+                            //If the current macID time is greater than when the checkpoint occurred, calculate based on the checkpoint as lower time bound
+                            tempLat = mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)).getLatitude() + findDistance(mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)),stepCoordsPDR.get(j+1))[0]* ((double) (macIDTime - checkPointTimeStamp)) / ((double) (upperTimeBound - checkPointTimeStamp))* Math.sin(mapHeadings.get(mapHeadings.indexOf(headingOnStep)+1))* findDistance(mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)),stepCoordsPDR.get(j+1))[1];
+                            tempLon = mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)).getLongitude() + findDistance(mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)),stepCoordsPDR.get(j+1))[0]* ((double) (macIDTime - checkPointTimeStamp)) / ((double) (upperTimeBound - checkPointTimeStamp))* Math.sin(mapHeadings.get(mapHeadings.indexOf(headingOnStep)+1))* findDistance(mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)),stepCoordsPDR.get(j+1))[1];
+
+                        }
+                        else{
+                            tempLat =  mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)).getLatitude();
+                            tempLon =  mapCheckPoints.get(checkPointTimeStamps.indexOf(checkPointTimeStamp)).getLongitude();
+                        }
                     }
                     else {
                         tempLat = prevStep.getLatitude() + STEP_LENGTH * ((double) (macIDTime - lowerTimeBound)) / ((double) (upperTimeBound - lowerTimeBound)) * Math.sin(headingOnStep) * findDistance(prevStep, mapCheckPoints.get(mapHeadings.indexOf(headingOnStep)+1))[1];
@@ -662,14 +674,12 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
             entries[2] = Double.toString(scanCoordsPDR.get(i).getLatitude());
             entries[3] = Double.toString(scanCoordsPDR.get(i).getLongitude());
             String output = "";
-            if(!entries[2].equals("-1") && !entries[3].equals("-1")) {
                 for (int j = 0; j < entries.length; j++) {
                     if (j == entries.length - 1) {
                         output = output + entries[j];
                     } else {
                         output = output + entries[j] + ",";
                     }
-                }
                 //Creates new output list by replacing the latitude and longitude in the original. This list will later be written to storage
                 replacedOutput.add(output);
             }
@@ -686,9 +696,6 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                 entries[3] = Double.toString(scanCoordsPDR.get(i).getLongitude());
                 String output = "";
                 for (int j = 0; j < entries.length; j++) {
-                    if((j == 2 || j == 3) && entries[j].equals("-1.0")){
-                        add = false;
-                    }
                     if (j != 4 && j != 6) {
                         if (j == entries.length - 1) {
                             output = output + entries[j];
