@@ -601,13 +601,15 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
         //y is sin of theta
         //x is cos of theta
         System.out.println("TURNED INFO " + findDistance(new LatLng(lat, lon), currentCheckPoint)[0] + ", " + currentCheckPoint.toString());
-        if(!enableGyro && mapCheckPoints.indexOf(currentCheckPoint)!=mapCheckPoints.size()-1 && mapHeadings.indexOf(currentHeading)!=mapHeadings.size()-1 && findDistance(new LatLng(lat, lon), currentCheckPoint)[0] < 1.5*STEP_LENGTH){
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(getBaseContext(), "TURN NOW", Toast.LENGTH_SHORT).show();
-                }
-            });
+        if(!enableGyro && mapCheckPoints.indexOf(currentCheckPoint)!=mapCheckPoints.size()-1 && mapHeadings.indexOf(currentHeading)!=mapHeadings.size()-1 && findDistance(new LatLng(lat, lon), currentCheckPoint)[0] < 4*STEP_LENGTH){
+            if(findDistance(new LatLng(lat, lon), currentCheckPoint)[0] < STEP_LENGTH) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getBaseContext(), "TURN NOW", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
             enableGyro = true;
         }
         else if(enableGyro && findDistance(new LatLng(lat, lon), currentCheckPoint)[0] > 1.5*STEP_LENGTH){
@@ -1148,6 +1150,7 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
     @Override
     public void step(long timeNs) {
         //here is for multiPath steps
+        boolean disableDialog = false;
         if(switchChecked && allowPDRMovement){
             stepCount++;
             if(stepCount <=3 && stepCount>=1){
@@ -1163,14 +1166,23 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                 //Divide b 10^6 to display in seconds
                 STEP_TIME_ADAPTIVE/=1000000;
             }
+            //Prevents slow steps during turns from displaying the alert dialog
+            if(stepCount>3) {
+                if (allowPDRMovement && (((double) adaptiveTimeList.get(adaptiveTimeList.size() - 1) / 1000000.0) - ((double) adaptiveTimeList.get(adaptiveTimeList.size() - 2) / 1000000.0)) > 2 * STEP_TIME_ORIGINAL || (((double) adaptiveTimeList.get(adaptiveTimeList.size() - 2) / 1000000.0) - ((double) adaptiveTimeList.get(adaptiveTimeList.size() - 3) / 100000.0)) > 2 * STEP_TIME_ORIGINAL || (((double) adaptiveTimeList.get(adaptiveTimeList.size() - 3) / 1000000.0) - ((double) adaptiveTimeList.get(adaptiveTimeList.size() - 4) / 1000000.0)) > 2 * STEP_TIME_ORIGINAL) {
+                    System.out.println((adaptiveTimeList.get(adaptiveTimeList.size() - 1) / 1000000) - (adaptiveTimeList.get(adaptiveTimeList.size() - 2) / 1000000));
+                    disableDialog = true;
+                }
+            }
             //0.1 here is a threshold in seconds
             if((STEP_TIME_ADAPTIVE  - STEP_TIME_ORIGINAL) > 0.15 && stepCount > 3){
                 //TODO disable this to allow for easier testing without step speed notifications
-                walkingTooFast = true;
-                SM.unregisterListener(this);
+                if(!disableDialog) {
+                    walkingTooFast = true;
+                    SM.unregisterListener(this);
+                }
 
             }
-            else if(STEP_TIME_ADAPTIVE - STEP_TIME_ORIGINAL < -0.15 && stepCount > 3){
+            else if(STEP_TIME_ADAPTIVE - STEP_TIME_ORIGINAL < -0.15 && stepCount > 3 ){
                 //TODO diable this to allow for easier testing without step speed notifications
                 walkingTooSlow = true;
                 SM.unregisterListener(this);
