@@ -167,6 +167,8 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
     List<LatLng[]> turnDegDiff = new ArrayList<>();
 
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -197,7 +199,7 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
         wifiText = findViewById(R.id.wifiText);
         titleText = findViewById(R.id.displayTitle);
         titleText.setText("Wifi Data");
-        scanText.setText("Flip switch to begin data collection" + "\n" + "Please ensure phone is oriented in same direction as collection path");
+        scanText.setText("Flip switch to begin data collection." + "\n" + "Please ensure phone is oriented in same direction as collection path");
         SM = (SensorManager) getSystemService(SENSOR_SERVICE);
         accel = SM.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         rotation = SM.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
@@ -315,7 +317,10 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                     //User has done something to warrant errenous data collection
                     else{
                         SM.unregisterListener(listener);
-                        scanText.setText("Press back to select a new data collection path" + "\n" + "User collected data became innacurate");
+                        aSwitch.setClickable(false);
+                        unregisterReceiver(cycleWifiReceiver);
+                        wifiText.setText("");
+                        scanText.setText("Press back to select a new data collection path." + "\n" + "User collected data became innacurate");
                         clickCounter = 0;
                     }
                 }
@@ -468,7 +473,8 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            wifiText.setText(list.size() + " networks scanned" + "\n" + stringBuffer);
+                            //String buffer contains all of the wifi info to display to text. However, this is being excluded for now
+                            wifiText.setText(list.size() + " networks scanned");
                         }
                     });
 
@@ -908,7 +914,7 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        scanText.setText(USER_NAME + "'s" + " Step Length: " + String.format("%.3f", STEP_LENGTH) + "m" + "\n" + "Distance from next turn: " + String.format("%.3f", findDistance(new LatLng(lat,lon), currentCheckPoint)[0]) + "m" + "\n" + "Scan #" + (clickCounter) + "\n" + BUILDING_NAME + " " + FLOOR_NUMBER + "\n" + "Number of Steps: " + Integer.toString(stepCount));
+                        scanText.setText(USER_NAME + "'s" + " Step Length: " + String.format("%.3f", STEP_LENGTH) + "m" + "\n" + "Distance from next turn: " + String.format("%.3f", findDistance(new LatLng(lat,lon), currentCheckPoint)[0]) + "m" + "\n" + "Expected Speed: " + STEP_TIME_ORIGINAL + "\n" + "Actual Speed: " + String.format("%.3f", STEP_TIME_ADAPTIVE ) + "\n" +"Scan #" + (clickCounter) + "\n" + BUILDING_NAME + " " + FLOOR_NUMBER + "\n" + "Number of Steps: " + Integer.toString(stepCount));
                     }
                 });
             }
@@ -916,7 +922,7 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        scanText.setText(USER_NAME + "'s" + " Step Length: " + String.format("%.3f", STEP_LENGTH) + "m" + "\n" + "Scan #" + (clickCounter) + "\n" + BUILDING_NAME + " " + FLOOR_NUMBER + "\n" + "Number of Steps: " + Integer.toString(stepCount));
+                        scanText.setText(USER_NAME + "'s" + " Step Length: " + String.format("%.3f", STEP_LENGTH) + "m" + "\n" + "Expected Speed: " + STEP_TIME_ORIGINAL + "\n" + "Actual Speed: " + String.format("%.3f", STEP_TIME_ADAPTIVE ) + "\n"+ "Scan #" + (clickCounter) + "\n" + BUILDING_NAME + " " + FLOOR_NUMBER + "\n" + "Number of Steps: " + Integer.toString(stepCount));
                     }
                 });
             }
@@ -1157,6 +1163,19 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
                 //Divide b 10^6 to display in seconds
                 STEP_TIME_ADAPTIVE/=1000000;
             }
+            //0.1 here is a threshold in seconds
+            if((STEP_TIME_ADAPTIVE  - STEP_TIME_ORIGINAL) > 0.15 && stepCount > 3){
+                //TODO disable this to allow for easier testing without step speed notifications
+                walkingTooFast = true;
+                SM.unregisterListener(this);
+
+            }
+            else if(STEP_TIME_ADAPTIVE - STEP_TIME_ORIGINAL < -0.15 && stepCount > 3){
+                //TODO diable this to allow for easier testing without step speed notifications
+                walkingTooSlow = true;
+                SM.unregisterListener(this);
+
+            }
             multiPathMovement();
         }
         //For single path steps
@@ -1178,16 +1197,16 @@ public class WifiInfo extends AppCompatActivity implements SensorEventListener, 
             }
             updateCoordinates(0);
             //0.1 here is a threshold in seconds
-            if((STEP_TIME_ADAPTIVE  - STEP_TIME_ORIGINAL) > 0.1 && stepCount > 3){
+            if((STEP_TIME_ADAPTIVE  - STEP_TIME_ORIGINAL) > 0.15 && stepCount > 3){
                 //TODO disable this to allow for easier testing without step speed notifications
-                //walkingTooFast = true;
-                //SM.unregisterListener(this);
+                walkingTooFast = true;
+                SM.unregisterListener(this);
 
             }
-            else if(STEP_TIME_ADAPTIVE - STEP_TIME_ORIGINAL < -0.1 && stepCount > 3){
+            else if(STEP_TIME_ADAPTIVE - STEP_TIME_ORIGINAL < -0.15 && stepCount > 3){
                 //TODO diable this to allow for easier testing without step speed notifications
-                //walkingTooSlow = true;
-                //SM.unregisterListener(this);
+                walkingTooSlow = true;
+                SM.unregisterListener(this);
 
             }
         }

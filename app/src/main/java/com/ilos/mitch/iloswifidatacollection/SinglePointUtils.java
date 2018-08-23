@@ -193,7 +193,7 @@ public class SinglePointUtils extends AppCompatActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            pointDataText.setText("Collecting " + Integer.toString(maxClicks) + " scans for best results!" + "\n\n" + "Scan #" + (clickCounter) + ":\t" + list.size() + " networks scanned " + "\n" + BUILDING_NAME + " " + FLOOR_NUMBER + "\n\n" + stringBuffer);
+                            pointDataText.setText("Collecting " + Integer.toString(maxClicks) + " scans" + "\n" + "Scan #" + (clickCounter) + ":\t" + list.size() + " networks scanned " + "\n" + BUILDING_NAME + " " + FLOOR_NUMBER);
                         }
                     });
                 } else { //If we are done collecting data

@@ -131,7 +131,7 @@ public class StepCalibrationUtils extends AppCompatActivity implements SensorEve
     };
     //Update UI call from the timer
     void updateText(){
-        stepText.setText(userName + "\n" + "Number of Steps: " + stepCount + "\n" + "Path Distance: " + pathDistance + "\n" +"Flip Switch Once Path is Completed");
+        stepText.setText(userName + "\n" + "Number of Steps: " + stepCount + "\n" + "Path Distance: " + String.format("%.2f", pathDistance)+ "m"  + "\n" +"Flip Switch Once Path is Completed");
     }
     void getPathDistance(){
         //Finds distance between two coordinates in metres
@@ -171,10 +171,10 @@ public class StepCalibrationUtils extends AppCompatActivity implements SensorEve
             stepTime/=1000;
             stepLength = pathDistance/stepCount;
             if(turnEnabled){
-                stepText.setText("Calculated Step Length is: " + stepLength + "\n" + "Average time for one step is: " + stepTime + "\n" + "Turning speed is: " + String.format("%.3f", userTurnSpeed) + "rad/s" + "\n" +"Flip switch to redo step calibration");
+                stepText.setText("Calculated Step Length is: " + String.format("$.2f", stepLength) + "m" + "\n" + "Average time for one step is: " + stepTime + "\n" + "Turning speed is: " + String.format("%.3f", userTurnSpeed) + "rad/s" + "\n" +"Flip switch to redo step calibration");
             }
             else {
-                stepText.setText("Calculated Step Length is: " + stepLength + "\n" + "Average time for one step is: " + stepTime + "\n" + "Flip switch to redo step calibration");
+                stepText.setText("Calculated Step Length is: " +  String.format("$.2f", stepLength) + "m"  + "Average time for one step is: " + stepTime + "\n" + "Flip switch to redo step calibration");
             }
 
             Log.i("START TIME", Long.toString(startTime));
